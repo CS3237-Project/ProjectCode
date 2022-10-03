@@ -4,7 +4,7 @@ host_ip = "192.168.43.153" #IP of Wemos 2 or SmartPhone Camera.
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code: " + str(rc))
-    client.subscribe("hello/#")
+    client.subscribe("message/#")
     print("Listening")
 
 def on_message(client, userdata, message):

@@ -25,7 +25,7 @@ IRrecv irrecv(irReceiver);
 
 IRAM_ATTR void IRTriggered(){
   if (irrecv.decode(&results)) {
-    client.publish("hello/world", "Activation Signal");
+    client.publish("message/Activation", "Activation Signal");
     irrecv.resume(); // Receive the next value
   }
 }
@@ -39,7 +39,7 @@ void setup() {
 
 void onConnectionEstablished()
 {
-  client.subscribe("hello/world", [](const String & payload) {
+  client.subscribe("message/Activation", [](const String & payload) {
     Serial.println(payload);
   });
 }
