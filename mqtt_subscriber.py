@@ -23,6 +23,7 @@ def on_message(client, userdata, message):
     filename = today + '.jpg'
     with open(filename, 'wb') as f:
         f.write(imgdata)
+    print('Saved to ' + filename)
 
 
 def setup(hostname):
