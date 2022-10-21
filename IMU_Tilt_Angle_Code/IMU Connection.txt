@@ -1,4 +1,0 @@
-IMU VCC => 3.3V Wemos
-IMU GND => GND Wemos
-IMU SCL => D1 Wemos
-IMU SDA => D2 Wemos
