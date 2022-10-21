@@ -138,8 +138,8 @@ void setup() {
   activation_status = false;
   digitalWrite(LED_BUILTIN,LOW);
   calibrateIMU();
-  digitalWrite(LED_BUILTIN,HIGH);
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
+  digitalWrite(LED_BUILTIN,HIGH);
 }
 
 void loop() {
