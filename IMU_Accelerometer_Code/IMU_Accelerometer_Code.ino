@@ -5,14 +5,14 @@
 #include "EspMQTTClient.h"
 #include <ArduinoJson.h>
 
-const char* ssid = "HUAWEI nova 3i";
-const char* wifiPassword = "23456789";
-//const char* ssid = "SINGTEL-48EB"; // To fill out
-//const char* wifiPassword = "eiseeseido"; // To fill out
+//const char* ssid = "HUAWEI nova 3i";
+//const char* wifiPassword = "23456789";
+const char* ssid = "SINGTEL-48EB"; // To fill out
+const char* wifiPassword = ""; // To fill out
 
-const char* mqttBrokerServer = "192.168.43.153"; //The DigitalOcean IP Address as we hosting the MQTT Broker there. For this test, i set it up using my laptop IP.
-//const char* mqttBrokerServer = "192.168.1.244";
-const char* mqttUsername = "WeMosIMUBottom";
+//const char* mqttBrokerServer = "192.168.43.153"; //The DigitalOcean IP Address as we hosting the MQTT Broker there. For this test, i set it up using my laptop IP.
+const char* mqttBrokerServer = "192.168.1.244";
+const char* mqttUsername = "Device1";
 const char* mqttPassword = "Password123";
 
 /* There are several ways to create your MPU9250 object:
@@ -33,7 +33,7 @@ EspMQTTClient client(
   mqttBrokerServer,  // MQTT Broker server ip
   mqttUsername,   // Can be omitted if not needed
   mqttPassword,   // Can be omitted if not needed
-  "TestClient",     // Client name that uniquely identify your device
+  "WeMosIMUBottom",     // Client name that uniquely identify your device
   1883          // The MQTT port, default to 1883. this line can be omitted
 );
 
@@ -117,13 +117,12 @@ void calibrateIMU(){
 }
 
 void onActivationStatusReceived(const String& message){
-  if (message == "Activation Signal On"){
-    client.publish("message/ActivationStatus","Turn LED On");
+  if (message == "IMU Activation Signal On"){
     activation_status = true;
-  }else if(message == "Activation Signal Off"){
+  }else if(message == "IMU Activation Signal Off"){
     activation_status = false;
-    client.publish("message/ActivationStatus","Turn LED Off");
   }
+  client.publish("message/Acknowledgement","Flash LED");
 }
 
 void onConnectionEstablished()
