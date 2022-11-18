@@ -1,7 +1,0 @@
-1. Enter EspMQTTClient in the Libaray Manager.
-2. Install EspMQTTClient by Patrick Lapointe.
-
-How it works:
-WeMos 1 publish to the topic Activation Signal.
-WeMos 2 and Smartphone subscribes to the topic Activation Signal.
-The Digital Ocean would act as the broker.

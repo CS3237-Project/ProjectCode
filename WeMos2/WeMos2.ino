@@ -5,15 +5,13 @@
 #include "EspMQTTClient.h"
 #include <ArduinoJson.h>
 
-//const char* ssid = "HUAWEI nova 3i";
-//const char* wifiPassword = "23456789";
 const char* ssid = "SINGTEL-48EB"; // To fill out
-const char* wifiPassword = ""; // To fill out
+const char* wifiPassword = "eiseeseido"; // To fill out
 
-//const char* mqttBrokerServer = "192.168.43.153"; //The DigitalOcean IP Address as we hosting the MQTT Broker there. For this test, i set it up using my laptop IP.
-const char* mqttBrokerServer = "192.168.1.244";
-const char* mqttUsername = "Device1";
+const char* mqttBrokerServer = "34.81.217.13";//The DigitalOcean IP Address as we hosting the MQTT Broker there. For this test, i set it up using my laptop IP.
+const char* mqttUsername = "Device2";
 const char* mqttPassword = "Password123";
+//unsigned long clocktime;
 
 /* There are several ways to create your MPU9250 object:
  * MPU9250_WE myMPU9250 = MPU9250_WE()              -> uses Wire / I2C Address = 0x68
@@ -23,9 +21,13 @@ const char* mqttPassword = "Password123";
  * Successfully tested with two I2C busses on an ESP32
  */
 MPU9250_WE myMPU9250 = MPU9250_WE(MPU9250_ADDR);
+float sequence_of_reading[80];
+int num_of_reading = 0;
 
 bool activation_status;
-const int capacity = JSON_OBJECT_SIZE(6);
+const int capacity = JSON_OBJECT_SIZE(80);
+
+StaticJsonDocument<capacity> IMUData;
 
 EspMQTTClient client(
   ssid,
@@ -34,32 +36,23 @@ EspMQTTClient client(
   mqttUsername,   // Can be omitted if not needed
   mqttPassword,   // Can be omitted if not needed
   "WeMosIMUBottom",     // Client name that uniquely identify your device
-  1883          // The MQTT port, default to 1883. this line can be omitted
+  1884          // The MQTT port, default to 1883. this line can be omitted
 );
 
-
 void sendIMUReading(){
+//  clocktime=millis();
+//  Serial.print("Start Sending: ");
+//  Serial.print(clocktime);
+//  Serial.println(" ");
   StaticJsonDocument<capacity> IMUData;
-  /*
-  xyzFloat angle_Top = myMPU9250_Top.getAngles();
-  IMUData["Top X Angle"] = angle_Top.x;
-  IMUData["Top Y Angle"] = angle_Top.y;
-  IMUData["Top Z Angle"] = angle_Top.z;
-  
-  xyzFloat angle_Bottom = myMPU9250_Bottom.getAngles();
-  IMUData["Bottom X Angle"] = angle_Bottom.x;
-  IMUData["Bottom Y Angle"] = angle_Bottom.y;
-  IMUData["Bottom Z Angle"] = angle_Bottom.z;
-  */
-  //xyzFloat accCorrRaw = myMPU9250.getCorrectedAccRawValues();
-  xyzFloat accCorrRaw = myMPU9250.getGValues();
-  IMUData["Bottom X Acceleration"] = accCorrRaw.x;
-  IMUData["Bottom Y Acceleration"] = accCorrRaw.y;
-  IMUData["Bottom Z Acceleration"] = accCorrRaw.z;
-  
+  copyArray(sequence_of_reading, sizeof(sequence_of_reading), IMUData);
   String message;
   serializeJson(IMUData, message);
   client.publish("message/IMUData",message);
+//  Serial.print("Done Sending: ");
+//  clocktime=millis();
+//  Serial.print(clocktime);
+//  Serial.println(" ");
 }
 
 void calibrateIMU(){
@@ -78,7 +71,6 @@ void calibrateIMU(){
    *  You call the function as follows: setAccOffsets(xMin,xMax,yMin,yMax,zMin,zMax);
    *  Use either autoOffset or setAccOffsets, not both.
    */
-  //myMPU9250.setAccOffsets(-14240.0, 18220.0, -17280.0, 15590.0, -20930.0, 12080.0);
   Serial.println("Position you MPU9250 flat and don't move it - calibrating...");
   delay(3000);
   myMPU9250.autoOffsets();
@@ -89,7 +81,7 @@ void calibrateIMU(){
    *  It can only be applied if the corresponding DLPF is enabled and 0<DLPF<7!
    *  Divider is a number 0...255
    */
-  myMPU9250.setSampleRateDivider(5);
+  myMPU9250.setSampleRateDivider(49);
   /*  MPU9250_ACC_RANGE_2G      2 g   
    *  MPU9250_ACC_RANGE_4G      4 g
    *  MPU9250_ACC_RANGE_8G      8 g   
@@ -118,12 +110,28 @@ void calibrateIMU(){
 
 void onActivationStatusReceived(const String& message){
   if (message == "IMU Activation Signal On"){
+    calibrateIMU();
     activation_status = true;
+    num_of_reading = 0;
   }else if(message == "IMU Activation Signal Off"){
     activation_status = false;
   }
   client.publish("message/Acknowledgement","Flash LED");
 }
+
+void getIMUReading(){
+  //clocktime=millis();
+  //Serial.print("Start Reading: ");
+  //Serial.print(clocktime);
+  xyzFloat corrAngleRaw = myMPU9250.getAngles();
+  sequence_of_reading[num_of_reading] = corrAngleRaw.x;
+  sequence_of_reading[num_of_reading + 1] = corrAngleRaw.y;
+  num_of_reading = num_of_reading + 2;
+  //clocktime=millis();
+  //Serial.print("End Reading: ");
+  //Serial.print(clocktime);
+}
+
 
 void onConnectionEstablished()
 {
@@ -136,17 +144,19 @@ void setup() {
   pinMode(LED_BUILTIN,OUTPUT);
   activation_status = false;
   digitalWrite(LED_BUILTIN,LOW);
-  calibrateIMU();
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
+  client.setMaxPacketSize(3000);
   digitalWrite(LED_BUILTIN,HIGH);
 }
 
 void loop() {
   if (activation_status == true){
-  sendIMUReading();
-  //Serial.println(myMPU9250.getOrientationAsString());
-  Serial.println();
+    getIMUReading();
+    if(num_of_reading == 80){  
+      sendIMUReading();
+      num_of_reading = 0;
+    }
+    delay(50); //50 milliseconds delay to prevent overwhelming the Mosquitto Server.
   }
-  delay(50); //50 milliseconds delay to prevent overwhelming the Mosquitto Server.
   client.loop();
 }

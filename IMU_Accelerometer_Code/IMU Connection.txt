@@ -1,7 +1,0 @@
-IMU VCC => 3.3V Wemos
-IMU GND => GND Wemos (Furthest Ground from VIN. Gnd is in same strip as VIN.)
-IMU SCL => D1 Wemos
-IMU SDA => D2 Wemos
-
-VCC facing wallet direction
-IMU Placed on the right hand side of the hip.
